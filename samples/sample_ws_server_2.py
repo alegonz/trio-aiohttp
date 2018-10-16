@@ -46,6 +46,9 @@ async def more_work():
         await trio.sleep(1)
 
 
+stopped_event = trio.Event()
+
+
 async def run_web_app(app, *args, _interface=web.TCPSite, **kwargs):
     """Run an aiohttp web app under Trio.
 
@@ -71,7 +74,12 @@ async def run_web_app(app, *args, _interface=web.TCPSite, **kwargs):
         try:
             await trio.sleep(math.inf)
         finally:
-            await trio_asyncio.run_asyncio(site.stop)
+            # This hangs on Ctrl-C. Don't know why yet.
+            # await trio_asyncio.run_asyncio(site.stop)
+
+            # So instead we do this, as per
+            # https://trio-asyncio.readthedocs.io/en/latest/usage.html#interrupting-the-asyncio-loop
+            stopped_event.set()
 
 
 async def main():
@@ -85,7 +93,8 @@ async def main():
 
     async with trio.open_nursery() as nursery:
         nursery.start_soon(run_web_app, app, ADDRESS, PORT)
-        # nursery.start_soon(more_work)
+        nursery.start_soon(more_work)
+        await stopped_event.wait()
 
 
 try:
