@@ -75,11 +75,15 @@ async def run_web_app(app, *args, _interface=web.TCPSite, **kwargs):
             await trio.sleep(math.inf)
         finally:
             # This hangs on Ctrl-C. Don't know why yet.
+            # Perhaps it literally stops the coroutine preventing its exit?
             # await trio_asyncio.run_asyncio(site.stop)
 
-            # So instead we do this, as per
+            # So instead we do this
+            await trio_asyncio.run_asyncio(site.cleanup)
+
+            # This also seems to work, as per
             # https://trio-asyncio.readthedocs.io/en/latest/usage.html#interrupting-the-asyncio-loop
-            stopped_event.set()
+            # stopped_event.set()
 
 
 async def main():
